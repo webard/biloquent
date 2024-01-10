@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Traits\ForwardsCalls;
-use Webard\Biloquent\Contracts\ReportFieldResolver;
+use Webard\Biloquent\Contracts\ReportAggregatorField;
 
 abstract class Report extends Model
 {
@@ -94,7 +94,7 @@ abstract class Report extends Model
 
                 $aggregatorClass = $aggregators[$column];
 
-                assert($aggregatorClass instanceof ReportFieldResolver);
+                assert($aggregatorClass instanceof ReportAggregatorField);
                 assert($this->dataset instanceof Builder);
 
                 $aggregatorClass->applyToBuilder($builder, $this->dataset);
@@ -145,7 +145,7 @@ abstract class Report extends Model
     abstract public function groups(): array;
 
     /**
-     * @return array<string,ReportFieldResolver>
+     * @return array<string,ReportAggregatorField>
      */
     abstract public function aggregators(): array;
 

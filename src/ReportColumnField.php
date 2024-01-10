@@ -6,9 +6,9 @@ namespace Webard\Biloquent;
 
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Webard\Biloquent\Contracts\ReportFieldResolver;
+use Webard\Biloquent\Contracts\ReportAggregatorField;
 
-class ReportColumnField implements ReportFieldResolver
+class ReportColumnField implements ReportAggregatorField
 {
     public function __construct(
         public string $alias,

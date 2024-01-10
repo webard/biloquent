@@ -7,7 +7,7 @@ namespace Webard\Biloquent\Contracts;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Webard\Biloquent\Report;
 
-interface ReportFieldResolver
+interface ReportAggregatorField
 {
     public function applyToBuilder(Report &$report, Builder &$dataset): self;
 }

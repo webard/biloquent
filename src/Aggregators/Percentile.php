@@ -6,18 +6,18 @@ namespace Webard\Biloquent\Aggregators;
 
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Webard\Biloquent\Contracts\ReportFieldResolver;
+use Webard\Biloquent\Contracts\ReportAggregatorField;
 use Webard\Biloquent\Report;
 
 class Percentile
 {
     /**
-     * @return ReportFieldResolver
+     * @return ReportAggregatorField
      */
     public static function field(string $alias, string $column, float $percentile)
     {
         return
-        new class($alias, $column, $percentile) implements ReportFieldResolver
+        new class($alias, $column, $percentile) implements ReportAggregatorField
         {
             public function __construct(
                 public string $alias,
@@ -45,12 +45,12 @@ class Percentile
     }
 
     /**
-     * @return ReportFieldResolver
+     * @return ReportAggregatorField
      */
     public static function relation(string $alias, string $relation, string $column, float $percentile)
     {
         return
-        new class($alias, $relation, $column, $percentile) implements ReportFieldResolver
+        new class($alias, $relation, $column, $percentile) implements ReportAggregatorField
         {
             public function __construct(
                 public string $alias,
