@@ -1,5 +1,13 @@
 {
     "name": "webard/biloquent",
+    "keywords": [
+        "laravel",
+        "nova",
+        "eloquent",
+        "bi",
+        "reports",
+        "business intelligence"
+    ],
     "license": "MIT",
     "authors": [
         {
