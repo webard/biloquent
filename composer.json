@@ -1,5 +1,6 @@
 {
     "name": "webard/biloquent",
+    "license": "MIT",
     "authors": [
         {
             "name": "Webard",
