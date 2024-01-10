@@ -19,7 +19,7 @@ class ReportRelationField implements ReportAggregatorField
     ) {
     }
 
-    public function applyToBuilder(Report &$report, Builder &$dataset): self
+    public function applyToBuilder(Builder &$report, Builder &$dataset): self
     {
         $dataset->withAggregate($this->relation, $this->column, $this->aggregator);
 

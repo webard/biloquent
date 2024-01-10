@@ -7,7 +7,6 @@ namespace Webard\Biloquent\Aggregators;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Webard\Biloquent\Contracts\ReportAggregatorField;
-use Webard\Biloquent\Report;
 
 class Percentile
 {
@@ -34,7 +33,7 @@ class Percentile
                 return 'percentile_cont('.$this->alias.','.($this->percentile).')';
             }
 
-            public function applyToBuilder(Report &$report, Builder &$dataset): self
+            public function applyToBuilder(Builder &$report, Builder &$dataset): self
             {
                 $dataset->addSelect($this->column.' as '.$this->alias);
                 $report->addSelect(DB::raw($this->prepareAggregateExpression().' as '.$this->alias));
@@ -60,7 +59,7 @@ class Percentile
             ) {
             }
 
-            public function applyToBuilder(Report &$report, Builder &$dataset): self
+            public function applyToBuilder(Builder &$report, Builder &$dataset): self
             {
                 $dataset->withAggregate($this->relation.' as '.$this->alias, 'total', 'count');
 

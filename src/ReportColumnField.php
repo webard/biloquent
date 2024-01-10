@@ -22,7 +22,7 @@ class ReportColumnField implements ReportAggregatorField
         return mb_strtoupper($this->aggregator).'('.$this->alias.')';
     }
 
-    public function applyToBuilder(Report &$report, Builder &$dataset): self
+    public function applyToBuilder(Builder &$report, Builder &$dataset): self
     {
         $dataset->addSelect($this->column.' as '.$this->alias);
         $report->addSelect(DB::raw($this->prepareAggregateExpression().' as '.$this->alias));
