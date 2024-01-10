@@ -14,12 +14,16 @@ Some of aggregator needs [UDF Infusion](https://github.com/infusion/udf_infusion
 - percentile
 - skewness
 
-## Sample raport
+## Sample report
+
+Sample base on Order model with total and created_at fields required.
+
+Create file `App\Reports\OrderReport.php`:
 
 ```php
 declare(strict_types=1);
 
-namespace Modules\Order\Reports;
+namespace App\Reports;
 
 use Webard\Biloquent\Aggregators\Avg;
 use Webard\Biloquent\Aggregators\Count;
