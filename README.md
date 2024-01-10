@@ -28,11 +28,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\User;
 use App\Models\Order;
 
-/**
- * @property float $total
- * @property float $average
- * @property int $currency_id
- */
 class OrderReport extends Report
 {
     public static string $model = Order::class;
@@ -72,5 +67,7 @@ class OrderReport extends Report
 Now you can use report:
 
 ```php
-$report = (new $class())->grouping(['month','year'])->aggregate(['total_orders', 'average_amount'])->en;
+$report = (new OrderReport)->grouping(['month','year'])->aggregate(['total_orders', 'average_amount'])->filter(function($model) {
+    $model->whereYear('created_at','>=', '2023');
+});
 ```
