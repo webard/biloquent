@@ -67,7 +67,7 @@ class OrderReport extends Report
 Now you can use report:
 
 ```php
-$report = (new OrderReport)->grouping(['month','year'])->aggregate(['total_orders', 'average_amount'])->filter(function($model) {
+$report = (new OrderReport)->grouping(['month','year'])->aggregate(['total_orders', 'average_amount'])->enhance(function($model) {
     $model->whereYear('created_at','>=', '2023');
 });
 ```

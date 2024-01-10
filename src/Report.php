@@ -122,7 +122,7 @@ abstract class Report extends Model
         return $this;
     }
 
-    public function filter(callable $enhancer): self
+    public function enhance(callable $enhancer): self
     {
         $this->dataset = $enhancer($this->dataset);
 
@@ -132,7 +132,7 @@ abstract class Report extends Model
     /**
      * @param  Builder<Report>  $builder
      */
-    public function scopeFilter(Builder $builder, callable $enhancer): self
+    public function scopeEnhance(Builder $builder, callable $enhancer): self
     {
         $this->dataset = $enhancer($this->dataset);
 
