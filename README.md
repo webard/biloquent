@@ -1,11 +1,13 @@
 # BILOQUENT
 
-BI for Eloquent models.
+Reports for Eloquent models.
+
+**Package is under development and in very early stage.**
 
 
 ## UDF Infusion
 
-Some of aggregator needs UDF Infusion extensions for MySQL:
+Some of aggregator needs [UDF Infusion](https://github.com/infusion/udf_infusion) extensions for MySQL:
 
 - kurtosis
 - median
