@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-            $table->string('name');
+            $table->id();
+            $table->string('no');
             $table->decimal('value');
             $table->timestamps();
         });

@@ -2,21 +2,20 @@
 
 namespace Webard\Biloquent\Tests;
 
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Orchestra\Testbench\Concerns\WithWorkbench;
-use Illuminate\Contracts\Config\Repository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Orchestra\Testbench\Concerns\WithWorkbench;
+
 use function Orchestra\Testbench\artisan;
 use function Orchestra\Testbench\workbench_path;
 
-class TestCase extends  \Orchestra\Testbench\TestCase
+class TestCase extends \Orchestra\Testbench\TestCase
 {
     use WithWorkbench;
     //use RefreshDatabase;
 
     protected function defineDatabaseMigrations()
     {
-      
+
         $this->loadMigrationsFrom(workbench_path('database/migrations'));
         artisan($this, 'migrate');
 
@@ -24,12 +23,11 @@ class TestCase extends  \Orchestra\Testbench\TestCase
             fn () => artisan($this, 'migrate:rollback')
         );
     }
+
     protected function getPackageProviders($app)
     {
         return [
-            \Staudenmeir\LaravelCte\DatabaseServiceProvider::class
+            \Staudenmeir\LaravelCte\DatabaseServiceProvider::class,
         ];
     }
-
-     
 }

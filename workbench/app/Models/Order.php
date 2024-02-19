@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
 {
-    protected $fillable = ['name', 'value'];
+    protected $fillable = ['no', 'value', 'created_at'];
+
+    protected $casts = [
+        'value' => 'decimal:2',
+    ];
 
     public function channel()
     {

@@ -27,7 +27,7 @@ abstract class Report extends Model
     /**
      * @var Builder<Report>
      */
-    protected Builder $dataset;
+    public Builder $dataset;
 
     use ForwardsCalls;
 
@@ -44,6 +44,14 @@ abstract class Report extends Model
     }
 
     /**
+     * @return Builder<Report>
+     */
+    public function newEloquentBuilder($query)
+    {
+        return new ReportBuilder($query);
+    }
+
+    /**
      * @param  array<mixed>  $attributes
      */
     public function __construct(array $attributes = [])
@@ -53,17 +61,6 @@ abstract class Report extends Model
         $this->table = 'p';
 
         $this->dataset = $this->dataset();
-    }
-
-    /**
-     * @param  array<int,mixed>  $columns
-     * @return $this
-     */
-    public function columns(array $columns)
-    {
-        $this->columns = $columns;
-
-        return $this;
     }
 
     // TODO: try to overwrite query() or get() method and there prepare temporary table
@@ -89,10 +86,10 @@ abstract class Report extends Model
 
         $aggregators = $this->aggregators();
 
-        foreach ($this->columns as $column) {
-            if (isset($aggregators[$column])) {
+        foreach ($this->summaries as $summary) {
+            if (isset($aggregators[$summary])) {
 
-                $aggregatorClass = $aggregators[$column];
+                $aggregatorClass = $aggregators[$summary];
 
                 assert($aggregatorClass instanceof ReportAggregatorField);
                 assert($this->dataset instanceof Builder);
@@ -106,37 +103,7 @@ abstract class Report extends Model
 
         $builder->withExpression('p', $datasetQuery);
 
-        $builder->addSelect(DB::raw('id'));
-
         return $builder;
-    }
-
-    /**
-     * @param  array<int,mixed>  $groups
-     * @return $this
-     */
-    public function grouping(array $groups)
-    {
-        $this->grouping = $groups;
-
-        return $this;
-    }
-
-    public function enhance(callable $enhancer): self
-    {
-        $this->dataset = $enhancer($this->dataset);
-
-        return $this;
-    }
-
-    /**
-     * @param  Builder<Report>  $builder
-     */
-    public function scopeEnhance(Builder $builder, callable $enhancer): self
-    {
-        $this->dataset = $enhancer($this->dataset);
-
-        return $this;
     }
 
     /**
@@ -156,6 +123,6 @@ abstract class Report extends Model
     {
         $model = static::$model;
 
-        return $model::query()->addSelect('id');
+        return $model::query();
     }
 }
