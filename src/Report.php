@@ -12,25 +12,16 @@ use Webard\Biloquent\Contracts\ReportAggregatorField;
 abstract class Report extends Model
 {
     /**
-     * @var array<int,mixed>
+     * @deprecated
      */
-    public array $grouping;
-
-    /**
-     * @var array<int,mixed>
-     */
-    public array $summaries;
-
-    protected static string $model;
-
-    public BuilderContract $dataset;
+    public static string $model;
 
     /**
      * @return Builder<Report>
      */
     public function newEloquentBuilder($query)
     {
-        return new ReportBuilder($query);
+        return new ReportBuilder($query, $this->dataset());
     }
 
     /**
@@ -39,8 +30,6 @@ abstract class Report extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-
-        $this->dataset = $this->dataset();
     }
 
     /**
@@ -59,5 +48,16 @@ abstract class Report extends Model
      */
     abstract public function aggregators(): array;
 
-    abstract public function dataset(): BuilderContract;
+    /**
+     * Method defines the dataset for the report.
+     * TODO: This method should be abstract in v2, and "public static string $model" should be removed.
+     */
+    public function dataset(): BuilderContract
+    {
+        // @phpstan-ignore-next-line
+        $model = static::$model;
+
+        return $model::query();
+
+    }
 }
