@@ -32,6 +32,16 @@ class ReportBuilder extends Builder
         return $this;
     }
 
+    /**
+     * @deprecated Use summary instead
+     */
+    public function columns(array $columns): self
+    {
+        $this->summary($columns);
+
+        return $this;
+    }
+
     public function enhance(callable $enhancer): self
     {
         $enhancer($this->getModel()->dataset);
@@ -50,6 +60,7 @@ class ReportBuilder extends Builder
 
         $availableGroups = $this->getModel()->groups();
 
+        // Apply groupings to the query and select the dataset
         foreach ($this->getModel()->grouping as $group) {
             if (isset($availableGroups[$group])) {
 
@@ -63,6 +74,7 @@ class ReportBuilder extends Builder
 
         $aggregators = $this->getModel()->aggregators();
 
+        // Apply aggregators to the query
         foreach ($this->getModel()->summaries as $summary) {
             if (isset($aggregators[$summary])) {
 
@@ -76,8 +88,10 @@ class ReportBuilder extends Builder
             }
         }
 
+        // Prepare the dataset query
         $datasetQuery = $this->getModel()->dataset->toRawSql();
 
+        // Apply the dataset query to the main query as a Common Table Expression
         $builder->withExpression($this->getModel()->getTable(), $datasetQuery);
 
         return $builder;
