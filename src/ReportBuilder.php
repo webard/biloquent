@@ -47,7 +47,7 @@ class ReportBuilder extends Builder
     }
 
     /**
-     * @deprecated Use summary instead
+     * @deprecated Use summary() instead
      */
     public function columns(array $columns): self
     {
