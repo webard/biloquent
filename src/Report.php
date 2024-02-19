@@ -17,6 +17,18 @@ abstract class Report extends Model
     public static string $model;
 
     /**
+     * @param  array<mixed>  $parameters
+     */
+    public function __call($method, $parameters)
+    {
+        if (in_array($method, ['hydrate'], true)) {
+            return $this->forwardCallTo($this->newQuery(), $method, $parameters);
+        }
+
+        return $this->forwardCallTo($this->dataset(), $method, $parameters);
+    }
+
+    /**
      * @return Builder<Report>
      */
     public function newEloquentBuilder($query)
