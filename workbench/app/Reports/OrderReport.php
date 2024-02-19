@@ -45,6 +45,7 @@ class OrderReport extends Report
             'month' => ['aggregator' => 'MONTH(orders_created_at)', 'field' => 'orders.created_at as orders_created_at'],
             'year' => ['aggregator' => 'YEAR(orders_created_at)', 'field' => 'orders.created_at as orders_created_at'],
             'date' => ['aggregator' => 'DATE(orders_created_at)', 'field' => 'orders.created_at as orders_created_at'],
+            'channel_id' => ['field' => 'orders.channel_id as orders_channel_id', 'aggregator' => 'orders_channel_id'],
         ];
     }
 }
