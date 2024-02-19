@@ -20,7 +20,7 @@ abstract class Report extends Model
     /**
      * @var array<int,mixed>
      */
-    public array $columns;
+    public array $summaries;
 
     protected static string $model;
 
