@@ -1,0 +1,47 @@
+name: Pest
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+    group: pest-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+  pest:
+    name: pest
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        php-version:
+          - '8.2'
+          - '8.3'
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: biloquent
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '${{ matrix.php-version }}'
+          coverage: none
+
+      - name: Install composer dependencies
+        uses: ramsey/composer-install@v2
+
+      - name: Create phpunit.xml
+        run: cp phpunit.xml.dist phpunit.xml
+
+      - name: Run pest
+        run: ./vendor/bin/pest
