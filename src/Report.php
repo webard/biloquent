@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Webard\Biloquent;
 
+use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Traits\ForwardsCalls;
 use Webard\Biloquent\Contracts\ReportAggregatorField;
 
 abstract class Report extends Model
@@ -24,24 +24,7 @@ abstract class Report extends Model
 
     protected static string $model;
 
-    /**
-     * @var Builder<Report>
-     */
-    public Builder $dataset;
-
-    use ForwardsCalls;
-
-    /**
-     * @param  array<mixed>  $parameters
-     */
-    public function __call($method, $parameters)
-    {
-        if (in_array($method, ['hydrate'], true)) {
-            return $this->forwardCallTo($this->newQuery(), $method, $parameters);
-        }
-
-        return $this->forwardCallTo($this->dataset->getModel(), $method, $parameters);
-    }
+    public BuilderContract $dataset;
 
     /**
      * @return Builder<Report>
@@ -57,8 +40,6 @@ abstract class Report extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-
-        $this->table = 'p';
 
         $this->dataset = $this->dataset();
     }
@@ -101,28 +82,26 @@ abstract class Report extends Model
 
         $datasetQuery = $this->dataset->toRawSql();
 
-        $builder->withExpression('p', $datasetQuery);
+        $builder->withExpression($this->getTable(), $datasetQuery);
 
         return $builder;
     }
 
     /**
+     * Method defines the groups for the report.
+     * By this data the report will be grouped, like by year, month, etc.
+     *
      * @return array<string,mixed>
      */
     abstract public function groups(): array;
 
     /**
+     * Method defines the aggregators for the report.
+     * By this data the report will be aggregated, like sum, count, etc.
+     *
      * @return array<string,ReportAggregatorField>
      */
     abstract public function aggregators(): array;
 
-    /**
-     * @return Builder<Report>
-     */
-    protected function dataset(): Builder
-    {
-        $model = static::$model;
-
-        return $model::query();
-    }
+    abstract public function dataset(): BuilderContract;
 }

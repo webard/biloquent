@@ -2,7 +2,9 @@
 
 namespace Workbench\App\Reports;
 
+use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Webard\Biloquent\Aggregators\Avg;
 use Webard\Biloquent\Aggregators\Count;
 use Webard\Biloquent\Aggregators\Sum;
 use Webard\Biloquent\Report;
@@ -11,18 +13,23 @@ use Workbench\App\Models\Order;
 
 class OrderReport extends Report
 {
-    public static string $model = Order::class;
-
     public $casts = [
         'total_orders' => 'integer',
         'total_value' => 'decimal:2',
+        'average_value' => 'decimal:2',
     ];
+
+    public function dataset(): Builder
+    {
+        return Order::query();
+    }
 
     public function aggregators(): array
     {
         return [
             'total_orders' => Count::field('total_orders', 'orders.id'),
             'total_value' => Sum::field('total_value', 'orders.value'),
+            'average_value' => Avg::field('average_value', 'orders.value'),
         ];
     }
 
