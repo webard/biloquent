@@ -7,12 +7,13 @@ namespace Webard\Biloquent;
 use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Webard\Biloquent\Contracts\ReportAggregatorField;
 use Illuminate\Support\Traits\ForwardsCalls;
+use Webard\Biloquent\Contracts\ReportAggregatorField;
 
 abstract class Report extends Model
 {
-use ForwardsCalls;
+    use ForwardsCalls;
+
     /**
      * @deprecated
      */
@@ -29,7 +30,7 @@ use ForwardsCalls;
             return $this->forwardCallTo($this->newQuery(), $method, $parameters);
         }
 
-        return $this->forwardCallTo($this->dataset, $method, $parameters);
+        return $this->forwardCallTo($this->dataset->getModel(), $method, $parameters);
     }
 
     /**
@@ -37,7 +38,7 @@ use ForwardsCalls;
      */
     public function newEloquentBuilder($query)
     {
-        return new ReportBuilder($query, $this->dataset);
+        return new ReportBuilder($query);
     }
 
     /**

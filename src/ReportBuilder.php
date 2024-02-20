@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Webard\Biloquent;
 
-use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Webard\Biloquent\Contracts\ReportAggregatorField;
 use Illuminate\Support\Traits\ForwardsCalls;
+use Webard\Biloquent\Contracts\ReportAggregatorField;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Builder<\Webard\Biloquent\Report>
@@ -16,21 +15,19 @@ use Illuminate\Support\Traits\ForwardsCalls;
 class ReportBuilder extends Builder
 {
     use ForwardsCalls;
-    /**
-     * @var array<int,mixed>
-     */
-    private array $grouping;
 
     /**
      * @var array<int,mixed>
      */
-    private array $summaries;
+    private array $grouping = [];
 
-   
+    /**
+     * @var array<int,mixed>
+     */
+    private array $summaries = [];
 
     public function __construct($query)
     {
-        //$this->dataset = $dataset;
         parent::__construct($query);
     }
 
