@@ -16,6 +16,8 @@ abstract class Report extends Model
      */
     public static string $model;
 
+    public BuilderContract $dataset;
+
     /**
      * @param  array<mixed>  $parameters
      */
@@ -25,7 +27,7 @@ abstract class Report extends Model
             return $this->forwardCallTo($this->newQuery(), $method, $parameters);
         }
 
-        return $this->forwardCallTo($this->dataset(), $method, $parameters);
+        return $this->forwardCallTo($this->dataset, $method, $parameters);
     }
 
     /**
@@ -33,7 +35,7 @@ abstract class Report extends Model
      */
     public function newEloquentBuilder($query)
     {
-        return new ReportBuilder($query, $this->dataset());
+        return new ReportBuilder($query, $this->dataset);
     }
 
     /**
@@ -42,6 +44,8 @@ abstract class Report extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
+
+        $this->dataset = $this->dataset();
     }
 
     /**
