@@ -8,9 +8,11 @@ use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Webard\Biloquent\Contracts\ReportAggregatorField;
+use Illuminate\Support\Traits\ForwardsCalls;
 
 abstract class Report extends Model
 {
+use ForwardsCalls;
     /**
      * @deprecated
      */

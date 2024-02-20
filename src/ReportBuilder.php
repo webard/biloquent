@@ -8,12 +8,14 @@ use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Webard\Biloquent\Contracts\ReportAggregatorField;
+use Illuminate\Support\Traits\ForwardsCalls;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Builder<\Webard\Biloquent\Report>
  */
 class ReportBuilder extends Builder
 {
+    use ForwardsCalls;
     /**
      * @var array<int,mixed>
      */
@@ -24,14 +26,7 @@ class ReportBuilder extends Builder
      */
     private array $summaries;
 
-    public function __call($method, $parameters)
-    {
-        if (in_array($method, ['hydrate'], true)) {
-            return $this->forwardCallTo($this, $method, $parameters);
-        }
-
-        return $this->forwardCallTo($this->getModel()->dataset, $method, $parameters);
-    }
+   
 
     public function __construct($query)
     {
