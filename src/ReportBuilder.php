@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Webard\Biloquent;
 
-use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Traits\ForwardsCalls;
 use Webard\Biloquent\Contracts\ReportAggregatorField;
 
 /**
@@ -14,21 +14,20 @@ use Webard\Biloquent\Contracts\ReportAggregatorField;
  */
 class ReportBuilder extends Builder
 {
-    /**
-     * @var array<int,mixed>
-     */
-    private array $grouping;
+    use ForwardsCalls;
 
     /**
      * @var array<int,mixed>
      */
-    private array $summaries;
+    private array $grouping = [];
 
-    private BuilderContract $dataset;
+    /**
+     * @var array<int,mixed>
+     */
+    private array $summaries = [];
 
-    public function __construct($query, BuilderContract $dataset)
+    public function __construct($query)
     {
-        $this->dataset = $dataset;
         parent::__construct($query);
     }
 
@@ -58,7 +57,7 @@ class ReportBuilder extends Builder
 
     public function enhance(callable $enhancer): self
     {
-        $enhancer($this->dataset);
+        $enhancer($this->getModel()->dataset);
 
         return $this;
     }
@@ -80,7 +79,7 @@ class ReportBuilder extends Builder
 
                 $builder->addSelect(DB::raw($availableGroups[$group]['aggregator'].' as '.$group));
                 if (isset($availableGroups[$group]['field'])) {
-                    $this->dataset->addSelect($availableGroups[$group]['field']);
+                    $this->getModel()->dataset->addSelect($availableGroups[$group]['field']);
                 }
                 $builder->groupByRaw($availableGroups[$group]['aggregator']);
             }
@@ -95,15 +94,15 @@ class ReportBuilder extends Builder
                 $aggregatorClass = $aggregators[$summary];
 
                 assert($aggregatorClass instanceof ReportAggregatorField);
-                assert($this->dataset instanceof Builder);
+                assert($this->getModel()->dataset instanceof Builder);
 
-                $aggregatorClass->applyToBuilder($builder, $this->dataset);
+                $aggregatorClass->applyToBuilder($builder, $this->getModel()->dataset);
 
             }
         }
 
         // Prepare the dataset query
-        $datasetQuery = $this->dataset->toRawSql();
+        $datasetQuery = $this->getModel()->dataset->toRawSql();
 
         // Apply the dataset query to the main query as a Common Table Expression
         $builder->withExpression($this->getModel()->getTable(), $datasetQuery);

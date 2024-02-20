@@ -49,20 +49,39 @@ class OrderReport extends Report
     // Define aggregators
     public function aggregators(): array
     {
+         // It is good practice to alias column names, but not necessary
         return [
-            'total_orders' => Count::field('total_orders', 'id'),
-            'average_amount' => Avg::field('average_amount', 'total'),
+            'total_orders' => Count::field('total_orders', 'orders.id'),
+            'average_amount' => Avg::field('average_amount', 'orders.value'),
         ];
     }
 
     public function groups(): array
     {
+        // It is good practice to alias column names, but not necessary
         return [
-            'day' => ['aggregator' => 'DAY(created_at)'],
-            'month' => ['aggregator' => 'MONTH(created_at)'],
-            'year' => ['aggregator' => 'YEAR(created_at)'],
-            'date' => ['aggregator' => 'DATE(created_at)'],
-            'customer_id' => ['field' => 'customer_id', 'aggregator' => 'customer_id'],
+            'day' => [
+                // aggregator will be applied to report query
+                'aggregator' => 'DAY(orders_created_at)',
+                // field will be fetched from dataset query
+                'field' => 'orders.created_at as orders_created_at'
+            ],
+            'month' => [
+                'aggregator' => 'MONTH(orders_created_at)',
+                'field' => 'orders.created_at as orders_created_at'
+            ],
+            'year' => [
+                'aggregator' => 'YEAR(orders_created_at)',
+                'field' => 'orders.created_at as orders_created_at'
+            ],
+            'date' => [
+                'aggregator' => 'DATE(orders_created_at)',
+                'field' => 'orders.created_at as orders_created_at'
+            ],
+            'channel_id' => [
+                'field' => 'channels.channel_id as channels_channel_id',
+                'aggregator' => 'channels_channel_id'
+            ],
         ];
     }
 }
@@ -71,7 +90,33 @@ class OrderReport extends Report
 Now you can use report:
 
 ```php
-$report = (new OrderReport)->grouping(['month','year'])->aggregate(['total_orders', 'average_amount'])->enhance(function($model) {
-    $model->whereYear('created_at','>=', '2023');
-});
+$report = OrderReport::query()
+    // set grouping fields
+    ->grouping(['month', 'year'])
+    // set which data you want to calculate
+    ->summary(['total_orders'])
+    // narrow down dataset that you want to calculate
+    ->enhance(function($model) {
+        $model->whereYear('created_at','>=', '2023');
+    })
+    // prepare report (this needs to be called before running query)
+    ->prepare()
+    // get results
+    ->get();
+```
+
+Example output:
+```php
+[
+    0 =>  [
+        'year' => 2023,
+        'month' => 12,
+        'total_orders' => 5,
+    ],
+    1 =>  [
+        'year' => 2024,
+        'month' => 4,
+        'total_orders' => 2,
+    ],
+]
 ```
