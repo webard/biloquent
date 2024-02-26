@@ -38,6 +38,7 @@ abstract class Report extends Model
      */
     public function newEloquentBuilder($query)
     {
+
         return new ReportBuilder($query);
     }
 

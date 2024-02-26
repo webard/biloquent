@@ -28,6 +28,7 @@ class ReportBuilder extends Builder
 
     public function __construct($query)
     {
+
         parent::__construct($query);
     }
 

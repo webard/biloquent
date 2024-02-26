@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Workbench\App\Models\Channel;
 use Workbench\App\Models\Order;
 use Workbench\App\Reports\OrderReport;
 
@@ -96,3 +97,55 @@ test('with relation', function () {
     ],
     );
 });
+
+test('raw select field', function () {
+    $channel = Channel::create(['name' => 'Channel 1']);
+    $channel2 = Channel::create(['name' => 'Channel 2']);
+
+    Order::create(['no' => '#001', 'value' => 2000, 'created_at' => '2023-11-01', 'channel_id' => $channel->id]);
+    Order::create(['no' => '#002', 'value' => 1000, 'created_at' => '2023-12-01', 'channel_id' => $channel->id]);
+
+    Order::create(['no' => '#003', 'value' => 1000, 'created_at' => '2024-01-01', 'channel_id' => $channel->id]);
+
+    Order::create(['no' => '#002', 'value' => 1000, 'created_at' => '2023-12-02', 'channel_id' => $channel2->id]);
+
+    $report = OrderReport::query()
+        ->grouping(['year'])
+        ->summary(['total_orders', 'average_per_channel'])
+        ->enhance(function ($q) {
+            $q->whereYear('orders.created_at', 2023);
+        })
+        ->prepare();
+
+    expect($report->toRawSql())->toBe('with `order_reports` as (select `orders`.`created_at` as `orders_created_at`, `orders`.`id` as `total_orders`, orders.id as orders_average_per_channel_order_id, orders.channel_id as orders_average_per_channel_channel_id from `orders` where year(`orders`.`created_at`) = 2023) select YEAR(orders_created_at) as year, COUNT(total_orders) as total_orders, ROUND(COUNT(orders_average_per_channel_order_id)/COUNT(DISTINCT orders_average_per_channel_channel_id),1) as average_per_channel from `order_reports` group by YEAR(orders_created_at)');
+
+    expect($report->get()->toArray())->toBe([
+        ['year' => 2023, 'total_orders' => 3, 'average_per_channel' => '1.5'],
+    ]);
+});
+
+test('raw builder field', function () {
+    $channel = Channel::create(['name' => 'Channel 1']);
+    $channel2 = Channel::create(['name' => 'Channel 2']);
+
+    Order::create(['no' => '#001', 'value' => 2000, 'created_at' => '2023-11-01', 'channel_id' => $channel->id]);
+    Order::create(['no' => '#002', 'value' => 1000, 'created_at' => '2023-12-01', 'channel_id' => $channel->id]);
+
+    Order::create(['no' => '#003', 'value' => 1000, 'created_at' => '2024-01-01', 'channel_id' => $channel->id]);
+
+    Order::create(['no' => '#002', 'value' => 1000, 'created_at' => '2023-12-02', 'channel_id' => $channel2->id]);
+
+    $report = OrderReport::query()
+        ->grouping(['year'])
+        ->summary(['total_orders', 'total_channels'])
+        ->enhance(function ($q) {
+            $q->whereYear('orders.created_at', 2023);
+        })
+        ->prepare();
+
+    expect($report->toRawSql())->toBe('with `order_reports` as (select `orders`.`created_at` as `orders_created_at`, `orders`.`id` as `total_orders`, `orders`.`channel_id` as `total_channels` from `orders` where year(`orders`.`created_at`) = 2023) select YEAR(orders_created_at) as year, COUNT(total_orders) as total_orders, COUNT(DISTINCT total_channels) as total_channels from `order_reports` group by YEAR(orders_created_at)');
+
+    expect($report->get()->toArray())->toBe([
+        ['year' => 2023, 'total_orders' => 3, 'total_channels' => 2],
+    ]);
+})->group('lol');
