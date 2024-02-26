@@ -8,7 +8,6 @@ use Closure;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Contracts\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Expression;
-use Illuminate\Support\Facades\DB;
 use Webard\Biloquent\Contracts\ReportAggregatorField;
 
 class Direct
@@ -49,19 +48,19 @@ class Direct
             {
                 if (is_array($this->datasetSelect)) {
                     foreach ($this->datasetSelect as $select) {
-                        $dataset->addSelect(DB::raw($select));
+                        $dataset->addSelect($select);
                     }
                 } else {
-                    $dataset->addSelect(DB::raw($this->datasetSelect));
+                    $dataset->addSelect($this->datasetSelect);
                 }
 
                 if (is_array($this->builderSelect)) {
                     foreach ($this->builderSelect as $select) {
-                        $report->addSelect(DB::raw($select));
+                        $report->addSelect($select);
                     }
 
                 } else {
-                    $report->addSelect(DB::raw($this->builderSelect));
+                    $report->addSelect($this->builderSelect);
                 }
 
                 return $this;

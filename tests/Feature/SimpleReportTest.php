@@ -98,7 +98,7 @@ test('with relation', function () {
     );
 });
 
-test('raw select field', function () {
+test('direct selects field', function () {
     $channel = Channel::create(['name' => 'Channel 1']);
     $channel2 = Channel::create(['name' => 'Channel 2']);
 
@@ -117,14 +117,14 @@ test('raw select field', function () {
         })
         ->prepare();
 
-    expect($report->toRawSql())->toBe('with `order_reports` as (select `orders`.`created_at` as `orders_created_at`, `orders`.`id` as `total_orders`, orders.id as orders_average_per_channel_order_id, orders.channel_id as orders_average_per_channel_channel_id from `orders` where year(`orders`.`created_at`) = 2023) select YEAR(orders_created_at) as year, COUNT(total_orders) as total_orders, ROUND(COUNT(orders_average_per_channel_order_id)/COUNT(DISTINCT orders_average_per_channel_channel_id),1) as average_per_channel from `order_reports` group by YEAR(orders_created_at)');
+    expect($report->toRawSql())->toBe('with `order_reports` as (select `orders`.`created_at` as `orders_created_at`, `orders`.`id` as `total_orders`, `orders`.`id` as `orders_average_per_channel_order_id`, `orders`.`channel_id` as `orders_average_per_channel_channel_id` from `orders` where year(`orders`.`created_at`) = 2023) select YEAR(orders_created_at) as year, COUNT(total_orders) as total_orders, ROUND(COUNT(orders_average_per_channel_order_id)/COUNT(DISTINCT orders_average_per_channel_channel_id),1) as average_per_channel from `order_reports` group by YEAR(orders_created_at)');
 
     expect($report->get()->toArray())->toBe([
         ['year' => 2023, 'total_orders' => 3, 'average_per_channel' => '1.5'],
     ]);
 });
 
-test('raw builder field', function () {
+test('direct builders field', function () {
     $channel = Channel::create(['name' => 'Channel 1']);
     $channel2 = Channel::create(['name' => 'Channel 2']);
 
