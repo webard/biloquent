@@ -7,6 +7,7 @@ namespace Webard\Biloquent\Aggregators;
 use Closure;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Contracts\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Contracts\Database\Query\Expression as ExpressionContract;
 use Illuminate\Database\Query\Expression;
 use Webard\Biloquent\Contracts\ReportAggregatorField;
 
@@ -34,13 +35,13 @@ class Direct
         };
     }
 
-    public static function selects(string|array|Expression $datasetSelect, string|array|Expression $builderSelect): ReportAggregatorField
+    public static function selects(string|array|Expression|ExpressionContract $datasetSelect, string|array|Expression|ExpressionContract $builderSelect): ReportAggregatorField
     {
         return new class($datasetSelect, $builderSelect) implements ReportAggregatorField
         {
             public function __construct(
-                public string|array|Expression $datasetSelect,
-                public string|array|Expression $builderSelect
+                public string|array|Expression|ExpressionContract $datasetSelect,
+                public string|array|Expression|ExpressionContract $builderSelect
             ) {
             }
 
