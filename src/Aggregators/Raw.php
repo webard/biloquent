@@ -19,6 +19,8 @@ use Webard\Biloquent\Contracts\Aggregator as AggregatorContract;
  *
  * Use this as an escape hatch when the built-in aggregators
  * don't support your use case.
+ *
+ * @phpstan-consistent-constructor
  */
 class Raw implements AggregatorContract
 {
@@ -116,6 +118,8 @@ class Raw implements AggregatorContract
 
     /**
      * Apply any necessary modifications to the dataset query.
+     *
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $dataset
      */
     public function applyToDataset(Builder $dataset): void
     {

@@ -17,6 +17,8 @@ use Webard\Biloquent\Contracts\Group;
  * @template TModel of Report
  *
  * @extends Builder<TModel>
+ *
+ * @method $this withExpression(string $as, string|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<\Illuminate\Database\Eloquent\Model>|\Closure $query, array<string, string> $columns = [], bool $recursive = false, bool $materialized = null, int $cycle = null)
  */
 class ReportBuilder extends Builder
 {
@@ -96,6 +98,8 @@ class ReportBuilder extends Builder
 
     /**
      * Get the dataset query builder.
+     *
+     * @return Builder<\Illuminate\Database\Eloquent\Model>
      */
     public function getDatasetQuery(): Builder
     {
@@ -153,7 +157,7 @@ class ReportBuilder extends Builder
         foreach ($groups as $group) {
             $group->applyJoins($this);
             $this->addSelect($group->toSelectExpression($grammar));
-            $this->groupByRaw($group->toGroupByExpression($grammar)->getValue($grammar));
+            $this->groupByRaw((string) $group->toGroupByExpression($grammar)->getValue($grammar));
         }
 
         // Build the report query with aggregators
@@ -222,13 +226,14 @@ class ReportBuilder extends Builder
     /**
      * Execute the query as a "select" statement.
      *
-     * @param  array<string>|string  $columns
+     * @param  array<int, string>|string  $columns
      * @return \Illuminate\Database\Eloquent\Collection<int, TModel>
      */
     public function get($columns = ['*'])
     {
         $this->prepare();
 
+        /** @var \Illuminate\Database\Eloquent\Collection<int, TModel> */
         return parent::get($columns);
     }
 
@@ -249,17 +254,24 @@ class ReportBuilder extends Builder
      * Paginate the given query.
      *
      * @param  int|null|\Closure  $perPage
-     * @param  array<string>|string  $columns
+     * @param  array<int, string>|string  $columns
      * @param  string  $pageName
      * @param  int|null  $page
      * @param  \Closure|int|null  $total
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     * @return \Illuminate\Pagination\LengthAwarePaginator<int, TModel>
      */
     public function paginate($perPage = null, $columns = ['*'], $pageName = 'page', $page = null, $total = null)
     {
         $this->prepare();
 
-        return parent::paginate($perPage, $columns, $pageName, $page, $total);
+        /** @var int|null $resolvedPerPage */
+        $resolvedPerPage = $perPage instanceof \Closure ? $perPage() : $perPage;
+
+        /** @var array<int, string> $resolvedColumns */
+        $resolvedColumns = is_string($columns) ? [$columns] : $columns;
+
+        /** @var \Illuminate\Pagination\LengthAwarePaginator<int, TModel> */
+        return parent::paginate($resolvedPerPage, $resolvedColumns, $pageName, $page, $total);
     }
 
     /**

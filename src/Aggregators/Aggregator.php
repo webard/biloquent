@@ -15,6 +15,9 @@ use Webard\Biloquent\Concerns\HasLabel;
 use Webard\Biloquent\Concerns\HasRelation;
 use Webard\Biloquent\Contracts\Aggregator as AggregatorContract;
 
+/**
+ * @phpstan-consistent-constructor
+ */
 abstract class Aggregator implements AggregatorContract
 {
     use HasColumn;
@@ -61,6 +64,8 @@ abstract class Aggregator implements AggregatorContract
 
     /**
      * Apply any necessary modifications to the dataset query.
+     *
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $dataset
      */
     public function applyToDataset(Builder $dataset): void
     {
@@ -76,6 +81,8 @@ abstract class Aggregator implements AggregatorContract
 
     /**
      * Apply relation aggregate to the dataset.
+     *
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $dataset
      */
     protected function applyRelationToDataset(Builder $dataset): void
     {
@@ -125,7 +132,11 @@ abstract class Aggregator implements AggregatorContract
             $column = $this->getColumn();
 
             // Laravel naming convention for withAggregate
-            return "{$relation}_{$aggregator}_{$column}";
+            $columnStr = $column instanceof \Illuminate\Contracts\Database\Query\Expression
+                ? $this->getName().'_col'
+                : (string) $column;
+
+            return "{$relation}_{$aggregator}_{$columnStr}";
         }
 
         return $this->getColumnAlias();

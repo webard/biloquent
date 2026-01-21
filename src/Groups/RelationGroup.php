@@ -85,6 +85,8 @@ class RelationGroup extends Group
 
     /**
      * Apply joins to the dataset query.
+     *
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $dataset
      */
     public function applyToDataset(Builder $dataset): void
     {
@@ -111,6 +113,8 @@ class RelationGroup extends Group
 
     /**
      * Apply any necessary joins to the report query.
+     *
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $query
      */
     public function applyJoins(Builder $query): void
     {

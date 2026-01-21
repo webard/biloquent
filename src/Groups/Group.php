@@ -13,6 +13,9 @@ use Webard\Biloquent\Concerns\HasConditions;
 use Webard\Biloquent\Concerns\HasLabel;
 use Webard\Biloquent\Contracts\Group as GroupContract;
 
+/**
+ * @phpstan-consistent-constructor
+ */
 abstract class Group implements GroupContract
 {
     use HasColumn;
@@ -65,6 +68,8 @@ abstract class Group implements GroupContract
 
     /**
      * Apply any necessary modifications to the dataset query.
+     *
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $dataset
      */
     public function applyToDataset(Builder $dataset): void
     {
@@ -73,6 +78,8 @@ abstract class Group implements GroupContract
 
     /**
      * Apply any necessary joins to the report query.
+     *
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $query
      */
     public function applyJoins(Builder $query): void
     {
@@ -105,7 +112,7 @@ abstract class Group implements GroupContract
     protected function wrapColumn(Grammar $grammar, string|Expression $column): string
     {
         if ($column instanceof Expression) {
-            return $column->getValue($grammar);
+            return (string) $column->getValue($grammar);
         }
 
         return $grammar->wrap($column);

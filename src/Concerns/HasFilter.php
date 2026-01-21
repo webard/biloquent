@@ -40,6 +40,11 @@ trait HasFilter
 
     /**
      * Apply the filter to a query builder.
+     *
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Builder<TModel>  $query
+     * @return Builder<TModel>
      */
     public function applyFilter(Builder $query): Builder
     {

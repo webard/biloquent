@@ -38,6 +38,8 @@ interface Aggregator
     /**
      * Apply any necessary modifications to the dataset query.
      * This is called before the CTE is built.
+     *
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $dataset
      */
     public function applyToDataset(Builder $dataset): void;
 

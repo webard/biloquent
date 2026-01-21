@@ -70,13 +70,13 @@ class DriverDetector
     protected static function detectMySqlVariant(MySqlConnection $connection): string
     {
         // Laravel 12+ has isMaria() method
-        if (method_exists($connection, 'isMaria') && $connection->isMaria()) {
+        if ($connection->isMaria()) {
             return self::DRIVER_MARIADB;
         }
 
         // Fallback: check version string
         try {
-            $version = $connection->selectOne('SELECT VERSION() as version')?->version ?? '';
+            $version = $connection->selectOne('SELECT VERSION() as version')->version ?? '';
 
             if (stripos($version, 'mariadb') !== false) {
                 return self::DRIVER_MARIADB;

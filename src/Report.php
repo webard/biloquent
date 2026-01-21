@@ -15,7 +15,7 @@ use Webard\Biloquent\Contracts\Group;
  *
  * Extend this class and implement the abstract methods to define your report.
  *
- * @method static ReportBuilder query()
+ * @method static ReportBuilder<static> query()
  */
 abstract class Report extends Model
 {
@@ -23,6 +23,8 @@ abstract class Report extends Model
 
     /**
      * The dataset query builder instance.
+     *
+     * @var Builder<\Illuminate\Database\Eloquent\Model>
      */
     public Builder $datasetQuery;
 
@@ -43,10 +45,12 @@ abstract class Report extends Model
     /**
      * Create a new Eloquent query builder for the model.
      *
+     * @param  \Illuminate\Database\Query\Builder  $query
      * @return ReportBuilder<static>
      */
     public function newEloquentBuilder($query): ReportBuilder
     {
+        /** @var ReportBuilder<static> */
         return new ReportBuilder($query);
     }
 
@@ -67,6 +71,8 @@ abstract class Report extends Model
      *
      * This should return an Eloquent query builder for the model
      * that will be used as the data source for aggregations.
+     *
+     * @return Builder<\Illuminate\Database\Eloquent\Model>
      */
     abstract public function dataset(): Builder;
 

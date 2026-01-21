@@ -32,7 +32,7 @@ class Median implements Expression
             $grammar instanceof PostgresGrammar => "percentile_cont(0.5) WITHIN GROUP (ORDER BY {$column})",
 
             // SQLite requires compile flag SQLITE_ENABLE_PERCENTILE
-            $grammar instanceof SQLiteGrammar => $this->getSqliteExpression($column),
+            $grammar instanceof SQLiteGrammar => $this->getSqliteExpression((string) $column),
 
             default => throw UnsupportedAggregatorException::forDriver('Median', 'unknown'),
         };
