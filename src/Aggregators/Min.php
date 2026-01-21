@@ -6,17 +6,17 @@ namespace Webard\Biloquent\Aggregators;
 
 use Illuminate\Contracts\Database\Query\Expression;
 use Illuminate\Database\Query\Grammars\Grammar;
-use Tpetry\QueryExpressions\Function\Aggregate\Avg as TpetryAvg;
+use Tpetry\QueryExpressions\Function\Aggregate\Min as TpetryMin;
 
-class Avg extends Aggregator
+class Min extends Aggregator
 {
     /**
-     * Build the AVG expression.
+     * Build the MIN expression.
      */
     protected function buildAggregateExpression(Grammar $grammar): Expression
     {
         $column = $this->getAggregateColumn();
 
-        return new TpetryAvg($column);
+        return new TpetryMin($column);
     }
 }

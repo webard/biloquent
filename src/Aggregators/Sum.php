@@ -4,24 +4,19 @@ declare(strict_types=1);
 
 namespace Webard\Biloquent\Aggregators;
 
-use Webard\Biloquent\ReportColumnField;
-use Webard\Biloquent\ReportRelationField;
+use Illuminate\Contracts\Database\Query\Expression;
+use Illuminate\Database\Query\Grammars\Grammar;
+use Tpetry\QueryExpressions\Function\Aggregate\Sum as TpetrySum;
 
-class Sum
+class Sum extends Aggregator
 {
     /**
-     * @return ReportColumnField
+     * Build the SUM expression.
      */
-    public static function field(string $alias, string $column)
+    protected function buildAggregateExpression(Grammar $grammar): Expression
     {
-        return new ReportColumnField($alias, $column, 'sum');
-    }
+        $column = $this->getAggregateColumn();
 
-    /**
-     * @return ReportRelationField
-     */
-    public static function relation(string $alias, string $relation, string $column)
-    {
-        return new ReportRelationField($alias, $relation, $column, 'sum', 'sum');
+        return new TpetrySum($column);
     }
 }

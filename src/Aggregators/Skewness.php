@@ -4,24 +4,26 @@ declare(strict_types=1);
 
 namespace Webard\Biloquent\Aggregators;
 
-use Webard\Biloquent\ReportColumnField;
-use Webard\Biloquent\ReportRelationField;
+use Illuminate\Contracts\Database\Query\Expression;
+use Illuminate\Database\Query\Grammars\Grammar;
+use Webard\Biloquent\Expressions\Skewness as SkewnessExpression;
 
-class Skewness
+/**
+ * Skewness aggregator.
+ *
+ * Only supported on MySQL/MariaDB with UDF Infusion extension.
+ *
+ * @see https://github.com/infusion/udf_infusion
+ */
+class Skewness extends Aggregator
 {
     /**
-     * @return ReportColumnField
+     * Build the SKEWNESS expression.
      */
-    public static function field(string $alias, string $column)
+    protected function buildAggregateExpression(Grammar $grammar): Expression
     {
-        return new ReportColumnField($alias, $column, 'skewness');
-    }
+        $column = $this->getAggregateColumn();
 
-    /**
-     * @return ReportRelationField
-     */
-    public static function relation(string $alias, string $relation, string $column)
-    {
-        return new ReportRelationField($alias, $relation, $column, 'skewness', 'skewness');
+        return new SkewnessExpression($column);
     }
 }

@@ -4,24 +4,24 @@ declare(strict_types=1);
 
 namespace Webard\Biloquent\Aggregators;
 
-use Webard\Biloquent\ReportColumnField;
-use Webard\Biloquent\ReportRelationField;
+use Illuminate\Contracts\Database\Query\Expression;
+use Illuminate\Database\Query\Grammars\Grammar;
+use Webard\Biloquent\Expressions\Median as MedianExpression;
 
-class Median
+class Median extends Aggregator
 {
     /**
-     * @return ReportColumnField
+     * Build the MEDIAN expression.
+     *
+     * Note: This requires database-specific support:
+     * - MySQL/MariaDB: UDF Infusion extension
+     * - PostgreSQL: Native percentile_cont(0.5)
+     * - SQLite: Compiled with SQLITE_ENABLE_PERCENTILE
      */
-    public static function field(string $alias, string $column)
+    protected function buildAggregateExpression(Grammar $grammar): Expression
     {
-        return new ReportColumnField($alias, $column, 'median');
-    }
+        $column = $this->getAggregateColumn();
 
-    /**
-     * @return ReportRelationField
-     */
-    public static function relation(string $alias, string $relation, string $column)
-    {
-        return new ReportRelationField($alias, $relation, $column, 'median', 'median');
+        return new MedianExpression($column);
     }
 }

@@ -4,69 +4,44 @@ declare(strict_types=1);
 
 namespace Webard\Biloquent\Aggregators;
 
-use Illuminate\Contracts\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
-use Webard\Biloquent\Contracts\ReportAggregatorField;
+use Illuminate\Contracts\Database\Query\Expression;
+use Illuminate\Database\Query\Grammars\Grammar;
+use Webard\Biloquent\Expressions\Percentile as PercentileExpression;
 
-class Percentile
+class Percentile extends Aggregator
 {
+    protected float $percentile = 0.5;
+
     /**
-     * @return ReportAggregatorField
+     * Set the percentile value (0.0 to 1.0).
      */
-    public static function field(string $alias, string $column, float $percentile)
+    public function percentile(float $percentile): static
     {
-        return
-        new class($alias, $column, $percentile) implements ReportAggregatorField
-        {
-            public function __construct(
-                public string $alias,
-                public string $column,
-                public float $percentile,
-            ) {
-            }
+        $this->percentile = $percentile;
 
-            /**
-             * @return string
-             */
-            private function prepareAggregateExpression()
-            {
-                return 'percentile_cont('.$this->alias.','.($this->percentile).')';
-            }
-
-            public function applyToBuilder(Builder &$report, Builder &$dataset): self
-            {
-                $dataset->addSelect($this->column.' as '.$this->alias);
-                $report->addSelect(DB::raw($this->prepareAggregateExpression().' as '.$this->alias));
-
-                return $this;
-            }
-        };
+        return $this;
     }
 
     /**
-     * @return ReportAggregatorField
+     * Alias for percentile() - set the fraction.
      */
-    public static function relation(string $alias, string $relation, string $column, float $percentile)
+    public function fraction(float $fraction): static
     {
-        return
-        new class($alias, $relation, $column, $percentile) implements ReportAggregatorField
-        {
-            public function __construct(
-                public string $alias,
-                public string $relation,
-                public string $column,
-                public float $percentile,
-            ) {
-            }
+        return $this->percentile($fraction);
+    }
 
-            public function applyToBuilder(Builder &$report, Builder &$dataset): self
-            {
-                $dataset->withAggregate($this->relation.' as '.$this->alias, 'total', 'count');
+    /**
+     * Build the PERCENTILE expression.
+     *
+     * Note: This requires database-specific support:
+     * - MySQL/MariaDB: UDF Infusion extension
+     * - PostgreSQL: Native percentile_cont
+     * - SQLite: Compiled with SQLITE_ENABLE_PERCENTILE
+     */
+    protected function buildAggregateExpression(Grammar $grammar): Expression
+    {
+        $column = $this->getAggregateColumn();
 
-                $report->addSelect(DB::raw('percentile_cont('.$this->alias.', '.($this->percentile).') as '.$this->alias));
-
-                return $this;
-            }
-        };
+        return new PercentileExpression($column, $this->percentile);
     }
 }
