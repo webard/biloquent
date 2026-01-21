@@ -133,7 +133,7 @@ class RelationGroup extends Group
         // Always include the foreign key
         $foreignKey = $this->getForeignKey();
         if ($foreignKey !== null) {
-            $columns[] = $foreignKey.' as '.$this->getColumnAlias();
+            $columns[] = $foreignKey.' as '.$this->getForeignKeyAlias();
         }
 
         // Include the display column if set
@@ -142,5 +142,19 @@ class RelationGroup extends Group
         }
 
         return $columns;
+    }
+
+    /**
+     * Get the alias for the foreign key column.
+     */
+    protected function getForeignKeyAlias(): string
+    {
+        $foreignKey = $this->getForeignKey();
+
+        if ($foreignKey === null) {
+            return $this->getName().'_fk';
+        }
+
+        return str_replace('.', '_', $foreignKey);
     }
 }

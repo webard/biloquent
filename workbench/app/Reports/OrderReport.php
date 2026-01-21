@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 use Webard\Biloquent\Aggregators\Avg;
 use Webard\Biloquent\Aggregators\Count;
+use Webard\Biloquent\Aggregators\Max;
+use Webard\Biloquent\Aggregators\Min;
 use Webard\Biloquent\Aggregators\Raw;
 use Webard\Biloquent\Aggregators\Sum;
 use Webard\Biloquent\Groups\ColumnGroup;
@@ -28,6 +30,9 @@ class OrderReport extends Report
         'total_value' => 'decimal:2',
         'average_value' => 'decimal:2',
         'average_per_channel' => 'decimal:1',
+        'min_value' => 'decimal:2',
+        'max_value' => 'decimal:2',
+        'completed_orders' => 'integer',
     ];
 
     public function dataset(): Builder
@@ -83,6 +88,14 @@ class OrderReport extends Report
             Avg::make('average_value')
                 ->column('orders.value'),
 
+            Min::make('min_value')
+                ->column('orders.value')
+                ->label('Minimum Value'),
+
+            Max::make('max_value')
+                ->column('orders.value')
+                ->label('Maximum Value'),
+
             Raw::make('average_per_channel')
                 ->datasetColumns([
                     'orders.id as orders_average_per_channel_order_id',
@@ -94,7 +107,16 @@ class OrderReport extends Report
             Count::make('completed_orders')
                 ->column('orders.id')
                 ->filter(fn (Builder $q) => $q->where('status', 'completed'))
-                ->when(false), // Hidden by default, enable with ->when(true)
+                ->hidden(), // Hidden by default
+
+            // Example of conditional visibility
+            Count::make('visible_orders')
+                ->column('orders.id')
+                ->when(true),
+
+            Count::make('hidden_orders')
+                ->column('orders.id')
+                ->when(false),
         ];
     }
 
