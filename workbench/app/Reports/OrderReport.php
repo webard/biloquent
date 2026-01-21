@@ -1,20 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Workbench\App\Reports;
 
-use Illuminate\Contracts\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 use Webard\Biloquent\Aggregators\Avg;
 use Webard\Biloquent\Aggregators\Count;
-use Webard\Biloquent\Aggregators\Direct;
+use Webard\Biloquent\Aggregators\Raw;
 use Webard\Biloquent\Aggregators\Sum;
+use Webard\Biloquent\Groups\ColumnGroup;
+use Webard\Biloquent\Groups\DateGroup;
+use Webard\Biloquent\Groups\RelationGroup;
 use Webard\Biloquent\Report;
 use Workbench\App\Models\Channel;
 use Workbench\App\Models\Order;
 
 class OrderReport extends Report
 {
+    protected $table = 'order_report';
+
     public $casts = [
         'total_orders' => 'integer',
         'total_channels' => 'integer',
@@ -23,47 +30,76 @@ class OrderReport extends Report
         'average_per_channel' => 'decimal:1',
     ];
 
-    public function dataset(): EloquentBuilder
+    public function dataset(): Builder
     {
         return Order::query();
+    }
+
+    public function groups(): array
+    {
+        return [
+            DateGroup::make('day')
+                ->column('orders.created_at')
+                ->extract('day'),
+
+            DateGroup::make('month')
+                ->column('orders.created_at')
+                ->extract('month'),
+
+            DateGroup::make('year')
+                ->column('orders.created_at')
+                ->extract('year'),
+
+            DateGroup::make('date')
+                ->column('orders.created_at')
+                ->extract('date'),
+
+            ColumnGroup::make('channel_id')
+                ->column('orders.channel_id'),
+
+            RelationGroup::make('channel')
+                ->relation('channel')
+                ->foreignKey('orders.channel_id')
+                ->ownerKey('channels.id')
+                ->displayColumn('channels.name')
+                ->table('channels')
+                ->as('channel_name'),
+        ];
     }
 
     public function aggregators(): array
     {
         return [
-            'total_orders' => Count::field('total_orders', 'orders.id'),
-            'total_channels' => Direct::builders(
-                function ($dataset) {
-                    return $dataset->addSelect('orders.channel_id as total_channels');
-                },
-                function ($report) {
-                    return $report->addSelect(DB::raw('COUNT(DISTINCT total_channels) as total_channels'));
-                }
-            ),
-            'total_value' => Sum::field('total_value', 'orders.value'),
-            'average_value' => Avg::field('average_value', 'orders.value'),
+            Count::make('total_orders')
+                ->column('orders.id'),
 
-            'average_per_channel' => Direct::selects([
-                'orders.id as orders_average_per_channel_order_id',
-                'orders.channel_id as orders_average_per_channel_channel_id',
-            ],
-                DB::raw('ROUND(COUNT(orders_average_per_channel_order_id)/COUNT(DISTINCT orders_average_per_channel_channel_id),1) as average_per_channel')),
+            Raw::make('total_channels')
+                ->datasetColumns(['orders.channel_id as total_channels_col'])
+                ->select(DB::raw('COUNT(DISTINCT total_channels_col)')),
+
+            Sum::make('total_value')
+                ->column('orders.value'),
+
+            Avg::make('average_value')
+                ->column('orders.value'),
+
+            Raw::make('average_per_channel')
+                ->datasetColumns([
+                    'orders.id as orders_average_per_channel_order_id',
+                    'orders.channel_id as orders_average_per_channel_channel_id',
+                ])
+                ->select(DB::raw('ROUND(COUNT(orders_average_per_channel_order_id) * 1.0 / COUNT(DISTINCT orders_average_per_channel_channel_id), 1)')),
+
+            // Example of conditional aggregator
+            Count::make('completed_orders')
+                ->column('orders.id')
+                ->filter(fn (Builder $q) => $q->where('status', 'completed'))
+                ->when(false), // Hidden by default, enable with ->when(true)
         ];
     }
 
     public function channel(): BelongsTo
     {
         return $this->belongsTo(Channel::class);
-    }
-
-    public function groups(): array
-    {
-        return [
-            'day' => ['aggregator' => 'DAY(orders_created_at)', 'field' => 'orders.created_at as orders_created_at'],
-            'month' => ['aggregator' => 'MONTH(orders_created_at)', 'field' => 'orders.created_at as orders_created_at'],
-            'year' => ['aggregator' => 'YEAR(orders_created_at)', 'field' => 'orders.created_at as orders_created_at'],
-            'date' => ['aggregator' => 'DATE(orders_created_at)', 'field' => 'orders.created_at as orders_created_at'],
-            'channel_id' => ['field' => 'orders.channel_id as orders_channel_id', 'aggregator' => 'orders_channel_id'],
-        ];
     }
 }

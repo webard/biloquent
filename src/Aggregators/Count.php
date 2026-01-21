@@ -4,24 +4,36 @@ declare(strict_types=1);
 
 namespace Webard\Biloquent\Aggregators;
 
-use Webard\Biloquent\ReportColumnField;
-use Webard\Biloquent\ReportRelationField;
+use Illuminate\Contracts\Database\Query\Expression;
+use Illuminate\Database\Query\Grammars\Grammar;
+use Tpetry\QueryExpressions\Function\Aggregate\Count as TpetryCount;
 
-class Count
+class Count extends Aggregator
 {
+    protected bool $distinct = false;
+
     /**
-     * @return ReportColumnField
+     * Count distinct values only.
      */
-    public static function field(string $alias, string $column)
+    public function distinct(bool $distinct = true): static
     {
-        return new ReportColumnField($alias, $column, 'count');
+        $this->distinct = $distinct;
+
+        return $this;
     }
 
     /**
-     * @return ReportRelationField
+     * Build the COUNT expression.
      */
-    public static function relation(string $alias, string $relation, string $column)
+    protected function buildAggregateExpression(Grammar $grammar): Expression
     {
-        return new ReportRelationField($alias, $relation, $column, 'count', 'sum');
+        $column = $this->getAggregateColumn();
+
+        // If we have a filter, use the filtered marker column
+        if ($this->hasFilter()) {
+            $column = $this->getColumnAlias().'_filtered';
+        }
+
+        return new TpetryCount($column, $this->distinct);
     }
 }

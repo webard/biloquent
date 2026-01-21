@@ -4,80 +4,142 @@ declare(strict_types=1);
 
 namespace Webard\Biloquent;
 
-use Illuminate\Contracts\Database\Eloquent\Builder as BuilderContract;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Traits\ForwardsCalls;
-use Webard\Biloquent\Contracts\ReportAggregatorField;
+use Webard\Biloquent\Contracts\Aggregator;
+use Webard\Biloquent\Contracts\Group;
 
+/**
+ * Base class for Biloquent reports.
+ *
+ * Extend this class and implement the abstract methods to define your report.
+ *
+ * @method static ReportBuilder query()
+ */
 abstract class Report extends Model
 {
     use ForwardsCalls;
 
     /**
-     * @deprecated
+     * The dataset query builder instance.
      */
-    public static string $model;
-
-    public BuilderContract $dataset;
+    public Builder $datasetQuery;
 
     /**
+     * Forward calls to the dataset model.
+     *
      * @param  array<mixed>  $parameters
      */
-    public function __call($method, $parameters)
+    public function __call($method, $parameters): mixed
     {
         if (in_array($method, ['hydrate'], true)) {
             return $this->forwardCallTo($this->newQuery(), $method, $parameters);
         }
 
-        return $this->forwardCallTo($this->dataset->getModel(), $method, $parameters);
+        return $this->forwardCallTo($this->datasetQuery->getModel(), $method, $parameters);
     }
 
     /**
-     * @return Builder<Report>
+     * Create a new Eloquent query builder for the model.
+     *
+     * @return ReportBuilder<static>
      */
-    public function newEloquentBuilder($query)
+    public function newEloquentBuilder($query): ReportBuilder
     {
-
         return new ReportBuilder($query);
     }
 
     /**
+     * Create a new Report instance.
+     *
      * @param  array<mixed>  $attributes
      */
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
 
-        $this->dataset = $this->dataset();
+        $this->datasetQuery = $this->dataset();
     }
 
     /**
-     * Method defines the groups for the report.
-     * By this data the report will be grouped, like by year, month, etc.
+     * Define the base dataset query for the report.
      *
-     * @return array<string,mixed>
+     * This should return an Eloquent query builder for the model
+     * that will be used as the data source for aggregations.
+     */
+    abstract public function dataset(): Builder;
+
+    /**
+     * Define the available groups for this report.
+     *
+     * Groups define how the data can be grouped (e.g., by year, month, category).
+     *
+     * @return array<Group>
      */
     abstract public function groups(): array;
 
     /**
-     * Method defines the aggregators for the report.
-     * By this data the report will be aggregated, like sum, count, etc.
+     * Define the available aggregators for this report.
      *
-     * @return array<string,ReportAggregatorField>
+     * Aggregators define the calculations performed on the data
+     * (e.g., count, sum, average).
+     *
+     * @return array<Aggregator>
      */
     abstract public function aggregators(): array;
 
     /**
-     * Method defines the dataset for the report.
-     * TODO: This method should be abstract in v2, and "public static string $model" should be removed.
+     * Get a group by name.
      */
-    public function dataset(): BuilderContract
+    public function getGroup(string $name): ?Group
     {
-        // @phpstan-ignore-next-line
-        $model = static::$model;
+        foreach ($this->groups() as $group) {
+            if ($group->getName() === $name) {
+                return $group;
+            }
+        }
 
-        return $model::query();
+        return null;
+    }
 
+    /**
+     * Get an aggregator by name.
+     */
+    public function getAggregator(string $name): ?Aggregator
+    {
+        foreach ($this->aggregators() as $aggregator) {
+            if ($aggregator->getName() === $name) {
+                return $aggregator;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get visible groups.
+     *
+     * @return array<Group>
+     */
+    public function getVisibleGroups(): array
+    {
+        return array_filter(
+            $this->groups(),
+            fn (Group $group) => $group->isVisible()
+        );
+    }
+
+    /**
+     * Get visible aggregators.
+     *
+     * @return array<Aggregator>
+     */
+    public function getVisibleAggregators(): array
+    {
+        return array_filter(
+            $this->aggregators(),
+            fn (Aggregator $aggregator) => $aggregator->isVisible()
+        );
     }
 }

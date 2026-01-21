@@ -4,110 +4,323 @@ declare(strict_types=1);
 
 namespace Webard\Biloquent;
 
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Grammars\Grammar;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Traits\ForwardsCalls;
-use Webard\Biloquent\Contracts\ReportAggregatorField;
+use Webard\Biloquent\Contracts\Aggregator;
+use Webard\Biloquent\Contracts\Group;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Builder<\Webard\Biloquent\Report>
+ * Custom query builder for Biloquent reports.
+ *
+ * @template TModel of Report
+ *
+ * @extends Builder<TModel>
  */
 class ReportBuilder extends Builder
 {
-    use ForwardsCalls;
+    /**
+     * The groups to apply to the query.
+     *
+     * @var array<string>
+     */
+    protected array $selectedGroups = [];
 
     /**
-     * @var array<int,mixed>
+     * The aggregators to include in the query.
+     *
+     * @var array<string>
      */
-    private array $grouping = [];
+    protected array $selectedAggregators = [];
 
     /**
-     * @var array<int,mixed>
+     * Whether the query has been prepared.
      */
-    private array $summaries = [];
+    protected bool $prepared = false;
 
-    public function __construct($query)
+    /**
+     * Custom enhancer callback for post-processing results.
+     */
+    protected ?Closure $enhancer = null;
+
+    /**
+     * Set the groups to apply to the query.
+     *
+     * @param  string|array<string>  ...$groups
+     * @return $this
+     */
+    public function grouping(string|array ...$groups): static
     {
-
-        parent::__construct($query);
-    }
-
-    public function grouping(array $grouping): self
-    {
-        $this->grouping = $grouping;
-
-        return $this;
-    }
-
-    public function summary(array $summaries): self
-    {
-        $this->summaries = $summaries;
+        $this->selectedGroups = collect($groups)->flatten()->all();
 
         return $this;
     }
 
     /**
-     * @deprecated Use summary() instead
+     * Set the aggregators to include in the query.
+     *
+     * @param  string|array<string>  ...$aggregators
+     * @return $this
      */
-    public function columns(array $columns): self
+    public function summary(string|array ...$aggregators): static
     {
-        $this->summary($columns);
+        $this->selectedAggregators = collect($aggregators)->flatten()->all();
 
         return $this;
     }
 
-    public function enhance(callable $enhancer): self
+    /**
+     * Apply a custom callback to modify the dataset query.
+     *
+     * @return $this
+     */
+    public function enhance(Closure $callback): static
     {
-        $enhancer($this->getModel()->dataset);
+        $callback($this->getDatasetQuery());
 
         return $this;
+    }
+
+    /**
+     * Apply a callback for raw query access.
+     *
+     * @return $this
+     */
+    public function rawAccess(Closure $callback): static
+    {
+        $callback($this);
+
+        return $this;
+    }
+
+    /**
+     * Get the dataset query builder.
+     */
+    public function getDatasetQuery(): Builder
+    {
+        return $this->getModel()->datasetQuery;
+    }
+
+    /**
+     * Get the query grammar.
+     */
+    protected function getGrammar(): Grammar
+    {
+        return $this->getQuery()->getGrammar();
     }
 
     /**
      * Prepare the query for execution.
      *
-     * @return Builder<Report>
+     * @return $this
      */
-    public function prepare()
+    public function prepare(): static
     {
-        $builder = $this;
+        if ($this->prepared) {
+            return $this;
+        }
 
-        $availableGroups = $this->getModel()->groups();
+        $this->prepared = true;
 
-        // Apply groupings to the query and select the dataset
-        foreach ($this->grouping as $group) {
-            if (isset($availableGroups[$group])) {
+        $grammar = $this->getGrammar();
+        $report = $this->getModel();
+        $dataset = $this->getDatasetQuery();
 
-                $builder->addSelect(DB::raw($availableGroups[$group]['aggregator'].' as '.$group));
-                if (isset($availableGroups[$group]['field'])) {
-                    $this->getModel()->dataset->addSelect($availableGroups[$group]['field']);
-                }
-                $builder->groupByRaw($availableGroups[$group]['aggregator']);
+        // Get groups and aggregators to use
+        $groups = $this->resolveGroups($report);
+        $aggregators = $this->resolveAggregators($report);
+
+        // Apply groups to dataset and collect columns
+        $datasetColumns = [];
+        foreach ($groups as $group) {
+            $group->applyToDataset($dataset);
+            $datasetColumns = array_merge($datasetColumns, $group->getDatasetColumns());
+        }
+
+        // Apply aggregators to dataset and collect columns
+        foreach ($aggregators as $aggregator) {
+            $aggregator->applyToDataset($dataset);
+            $datasetColumns = array_merge($datasetColumns, $aggregator->getDatasetColumns());
+        }
+
+        // Add dataset columns to the dataset query
+        foreach (array_unique($datasetColumns) as $column) {
+            $dataset->addSelect(DB::raw($column));
+        }
+
+        // Build the report query with groups
+        foreach ($groups as $group) {
+            $group->applyJoins($this);
+            $this->addSelect($group->toSelectExpression($grammar));
+            $this->groupByRaw($group->toGroupByExpression($grammar)->getValue($grammar));
+        }
+
+        // Build the report query with aggregators
+        foreach ($aggregators as $aggregator) {
+            $this->addSelect($aggregator->toExpression($grammar));
+        }
+
+        // Build the CTE from the dataset query
+        $datasetSql = $dataset->toRawSql();
+        $this->withExpression($report->getTable(), $datasetSql);
+
+        return $this;
+    }
+
+    /**
+     * Resolve which groups to use.
+     *
+     * @return array<Group>
+     */
+    protected function resolveGroups(Report $report): array
+    {
+        $availableGroups = $report->getVisibleGroups();
+
+        if (empty($this->selectedGroups)) {
+            return [];
+        }
+
+        $groups = [];
+        foreach ($this->selectedGroups as $groupName) {
+            $group = $report->getGroup($groupName);
+
+            if ($group !== null && $group->isVisible()) {
+                $groups[] = $group;
             }
         }
 
-        $aggregators = $this->getModel()->aggregators();
+        return $groups;
+    }
 
-        // Apply aggregators to the query
-        foreach ($this->summaries as $summary) {
-            if (isset($aggregators[$summary])) {
+    /**
+     * Resolve which aggregators to use.
+     *
+     * @return array<Aggregator>
+     */
+    protected function resolveAggregators(Report $report): array
+    {
+        $availableAggregators = $report->getVisibleAggregators();
 
-                $aggregatorClass = $aggregators[$summary];
+        // If no specific aggregators requested, use all visible ones
+        if (empty($this->selectedAggregators)) {
+            return $availableAggregators;
+        }
 
-                assert($aggregatorClass instanceof ReportAggregatorField);
-                assert($this->getModel()->dataset instanceof Builder);
+        $aggregators = [];
+        foreach ($this->selectedAggregators as $aggregatorName) {
+            $aggregator = $report->getAggregator($aggregatorName);
 
-                $aggregatorClass->applyToBuilder($builder, $this->getModel()->dataset);
-
+            if ($aggregator !== null && $aggregator->isVisible()) {
+                $aggregators[] = $aggregator;
             }
         }
 
-        // Prepare the dataset query
-        $datasetQuery = $this->getModel()->dataset->toRawSql();
+        return $aggregators;
+    }
 
-        // Apply the dataset query to the main query as a Common Table Expression
-        $builder->withExpression($this->getModel()->getTable(), $datasetQuery);
+    /**
+     * Execute the query as a "select" statement.
+     *
+     * @param  array<string>|string  $columns
+     * @return \Illuminate\Database\Eloquent\Collection<int, TModel>
+     */
+    public function get($columns = ['*'])
+    {
+        $this->prepare();
 
-        return $builder;
+        return parent::get($columns);
+    }
+
+    /**
+     * Get the first result.
+     *
+     * @param  array<string>|string  $columns
+     * @return TModel|null
+     */
+    public function first($columns = ['*'])
+    {
+        $this->prepare();
+
+        return parent::first($columns);
+    }
+
+    /**
+     * Paginate the given query.
+     *
+     * @param  int|null|\Closure  $perPage
+     * @param  array<string>|string  $columns
+     * @param  string  $pageName
+     * @param  int|null  $page
+     * @param  \Closure|int|null  $total
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function paginate($perPage = null, $columns = ['*'], $pageName = 'page', $page = null, $total = null)
+    {
+        $this->prepare();
+
+        return parent::paginate($perPage, $columns, $pageName, $page, $total);
+    }
+
+    /**
+     * Get a lazy collection for the given query.
+     *
+     * @return \Illuminate\Support\LazyCollection<int, TModel>
+     */
+    public function cursor()
+    {
+        $this->prepare();
+
+        return parent::cursor();
+    }
+
+    /**
+     * Execute a callback over each item.
+     *
+     * @param  int  $count
+     * @return bool
+     */
+    public function each(callable $callback, $count = 1000)
+    {
+        $this->prepare();
+
+        return parent::each($callback, $count);
+    }
+
+    /**
+     * Chunk the results of the query.
+     *
+     * @param  int  $count
+     * @return bool
+     */
+    public function chunk($count, callable $callback)
+    {
+        $this->prepare();
+
+        return parent::chunk($count, $callback);
+    }
+
+    /**
+     * Get the SQL representation of the query.
+     *
+     * @return string
+     */
+    public function toSql()
+    {
+        $this->prepare();
+
+        return parent::toSql();
+    }
+
+    /**
+     * Get the raw SQL representation of the query.
+     *
+     * @return string
+     */
+    public function toRawSql()
+    {
+        $this->prepare();
+
+        return parent::toRawSql();
     }
 }
